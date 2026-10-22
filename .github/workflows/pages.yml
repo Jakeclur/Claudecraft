@@ -22,8 +22,14 @@ jobs:
       - uses: actions/configure-pages@v5
         with:
           enablement: true
+      # index.html is a page body; give it the usual document wrapper for Pages
+      - name: Build site
+        run: |
+          cp -r public _site
+          node -e "const fs=require('fs');const f='_site/index.html';const s=fs.readFileSync(f,'utf8');const i=s.indexOf('<canvas');fs.writeFileSync(f,'<!doctype html>\n<html lang=\"en\"><head>\n'+s.slice(0,i)+'</head><body>\n'+s.slice(i)+'</body></html>\n')"
+          touch _site/.nojekyll
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: public
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4
