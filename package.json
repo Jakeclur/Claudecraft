@@ -1,0 +1,17 @@
+{
+  "name": "cave-craft",
+  "version": "1.0.0",
+  "description": "Voxel sandbox game with biomes, crafting, survival creatures and LAN multiplayer. Built on three.js.",
+  "private": true,
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "^8.21.0"
+  }
+}

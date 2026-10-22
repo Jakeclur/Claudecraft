@@ -1,0 +1,4 @@
+node_modules/
+data/
+world-save.json
+.DS_Store
