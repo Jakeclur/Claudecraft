@@ -301,3 +301,9 @@ The `docs/` folder is a ready-made copy of `public/` for GitHub Pages. In the re
 **Settings → Pages**, set **Source** to **Deploy from a branch**, pick **main** and **/docs**, and save.
 After a minute the game is at `https://<your-name>.github.io/<repo-name>/`.
 If you change `public/`, copy it to `docs/` again (and wrap `index.html` in `<!doctype html><html><head>…</head><body>…</body></html>`).
+
+## Easiest way to start the server
+
+Install [Node.js](https://nodejs.org) (LTS), then double-click **Start Cave Craft.bat** (Windows) or
+**Start Cave Craft.command** (Mac). It installs what it needs the first time, starts the server and
+opens the game. Keep its window open while you play.
