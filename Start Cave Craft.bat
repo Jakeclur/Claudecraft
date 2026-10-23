@@ -3,6 +3,8 @@ title Cave Craft server
 cd /d "%~dp0"
 rem Look for Node.js even if Windows has not updated its list yet
 set "PATH=%PATH%;C:\Program Files\nodejs;C:\Program Files (x86)\nodejs;%LOCALAPPDATA%\Programs\nodejs;%APPDATA%\npm"
+rem Portable Node.js downloaded as a zip (for example in Downloads or on the Desktop)
+for /d %%D in ("%USERPROFILE%\Downloads\node-v*-win-x64" "%USERPROFILE%\Downloads\node-v*-win-x64\node-v*-win-x64" "%USERPROFILE%\Desktop\node-v*-win-x64" "%USERPROFILE%\Documents\node-v*-win-x64") do if exist "%%~fD\node.exe" set "PATH=%PATH%;%%~fD"
 where node >nul 2>nul
 if errorlevel 1 (
   echo.
