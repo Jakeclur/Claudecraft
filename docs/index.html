@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en"><head>
+<title>Cave Craft</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Nunito:wght@600;800&display=swap">
+<link rel="stylesheet" href="./style.css">
+
+</head><body>
+<canvas id="game"></canvas>
+
+<div id="hud" hidden>
+  <div id="cross"></div>
+  <div id="breakRing" hidden></div>
+  <div id="target" hidden></div>
+  <div id="info"></div>
+  <canvas id="minimap" width="160" height="160"></canvas>
+  <div id="questTracker"></div>
+  <div id="roundHud" hidden></div>
+  <div id="scoreboard"></div>
+  <div id="lvl" title="Level"></div>
+  <div id="messages"></div>
+  <div id="chatLog"></div>
+  <div id="chatBox" hidden><input id="chatInput" maxlength="160" placeholder="Say something, or /help" autocomplete="off"></div>
+  <div id="bottom">
+    <div id="stats">
+      <div id="hearts" class="row"></div>
+      <div id="bubbles" hidden><span></span></div>
+      <div id="food" class="row"></div>
+    </div>
+    <div id="hotbar"></div>
+  </div>
+  <div id="touch" class="touch-only">
+    <div id="stickBase"><div id="stickKnob"></div></div>
+    <button id="tJump" type="button">Jump</button>
+    <button id="tMode" type="button">Break</button>
+    <button id="tUse" type="button">Use</button>
+    <div id="tTop">
+      <button id="tInv" type="button">Bag</button>
+      <button id="tMap" type="button">Map</button>
+      <button id="tQuest" type="button">Quests</button>
+      <button id="tEmote" type="button">Emote</button>
+      <button id="tCam" type="button">View</button>
+      <button id="tFly" type="button" hidden>Fly</button>
+      <button id="tScore" type="button">Players</button>
+      <button id="tPause" type="button">Menu</button>
+    </div>
+  </div>
+</div>
+
+<div id="vignette"></div>
+<div id="waterTint"></div>
+
+<!-- bag, crafting and machines -->
+<div id="inventory" class="overlay" hidden>
+  <div class="panel wide">
+    <header>
+      <h2 id="invTitle">Bag &amp; Crafting</h2>
+      <button class="close" type="button" data-close="inventory" aria-label="Close">✕</button>
+    </header>
+    <div class="cols">
+      <section class="bag">
+        <div id="machine" hidden></div>
+        <div id="invGrid" class="grid"></div>
+        <div id="invHot" class="grid hot"></div>
+        <p class="hint">Click to pick up and drop stacks. Right-click splits a stack. Shift-click moves a stack between bag and machine.</p>
+      </section>
+      <section class="craft">
+        <div class="tabs">
+          <button id="tabCraft" type="button" class="on">Crafting</button>
+          <button id="tabCreative" type="button" hidden>All blocks</button>
+        </div>
+        <div id="craftControls">
+          <div id="cats" class="chips"></div>
+          <div class="searchrow">
+            <input id="search" type="search" placeholder="Search recipes" autocomplete="off">
+            <label><input type="checkbox" id="onlyCraftable"> Only what I can make</label>
+          </div>
+          <p id="benchNote" class="hint"></p>
+        </div>
+        <div id="recipes"></div>
+      </section>
+    </div>
+  </div>
+</div>
+<div id="held" class="slot" hidden><img alt=""><b></b><i></i></div>
+<div id="tooltip" hidden></div>
+
+<div id="dialogue-wrap" class="overlay dim" hidden>
+  <div id="dialogue" class="panel"></div>
+</div>
+
+<div id="questlog" class="overlay dim" hidden>
+  <div class="panel">
+    <header><h2>Quests</h2><button class="close" type="button" data-close="questlog" aria-label="Close">✕</button></header>
+    <div id="questList" class="body"></div>
+  </div>
+</div>
+
+<div id="bigmap" class="overlay" hidden>
+  <canvas id="mapCanvas"></canvas>
+  <div class="mapbar">
+    <strong id="mapTitle">World map</strong>
+    <span id="mapHint">Drag to pan, scroll or pinch to zoom.</span>
+    <button type="button" id="mapCenter">Centre on me</button>
+    <button class="close" type="button" data-close="bigmap" aria-label="Close">✕</button>
+  </div>
+</div>
+
+<div id="waystone" class="overlay dim" hidden>
+  <div class="panel">
+    <header><h2>Waystone</h2><button class="close" type="button" data-close="waystone" aria-label="Close">✕</button></header>
+    <div class="body">
+      <label for="wayName">Name this waystone</label>
+      <input id="wayName" maxlength="24" autocomplete="off">
+      <h4>Travel to</h4>
+      <div id="wayList"></div>
+    </div>
+  </div>
+</div>
+
+<div id="emotes" class="overlay" hidden><div id="emoteRing"></div></div>
+
+<!-- title screen -->
+<div id="menu">
+  <div class="card title">
+    <h1>Cave Craft</h1>
+    <p class="lead">An endless world of reefs, cliffs, glowing caverns, villages and sky islands. Every new world is different.</p>
+    <div id="loading" hidden><div class="bar"><span></span></div><p id="loadText">Loading</p></div>
+    <div id="menuMain">
+      <label for="nameInput">Your name</label>
+      <input id="nameInput" maxlength="16" autocomplete="off">
+      <h3>Your worlds</h3>
+      <div id="worldList"></div>
+      <div class="menurow">
+        <button id="newWorldBtn" type="button" class="primary">New world</button>
+        <button id="avatarBtn" type="button">Character</button>
+        <button id="settingsBtn" type="button">Settings</button>
+      </div>
+      <div class="menurow">
+        <button id="playOnlineBtn" type="button" class="primary">Play online</button>
+        <button id="profileBtn" type="button">Profile &amp; skills</button>
+      </div>
+      <div id="inviteBanner" class="banner" hidden><span></span> <button type="button" id="inviteGo" class="primary">Join</button></div>
+      <div class="menurow small">
+        <button id="importBtn" type="button">Import a world</button>
+        <input id="importFile" type="file" accept=".json,application/json" hidden>
+      </div>
+      <p id="netStatus" class="net">Checking for a multiplayer server…</p>
+    </div>
+    <form id="createWorld" hidden>
+      <h3>Create a new world</h3>
+      <label for="worldName">World name</label>
+      <input id="worldName" maxlength="32" autocomplete="off">
+      <label for="worldSeed">Seed <span class="hint">(leave empty for a surprise)</span></label>
+      <input id="worldSeed" maxlength="32" autocomplete="off" placeholder="Random">
+      <fieldset>
+        <legend>Mode</legend>
+        <label><input type="radio" name="mode" value="survival" checked> Survival</label>
+        <label><input type="radio" name="mode" value="creative"> Creative</label>
+      </fieldset>
+      <div class="menurow">
+        <button type="submit" class="primary">Create &amp; play</button>
+        <button type="button" id="cancelCreate">Back</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="avatarEditor" class="overlay dim" hidden>
+  <div class="panel wide">
+    <header><h2>Character</h2><button class="close" type="button" data-close="avatarEditor" aria-label="Close">✕</button></header>
+    <div class="avatar-cols">
+      <div class="preview"><canvas id="avatarPreview" width="320" height="420"></canvas>
+        <div class="menurow small"><button type="button" id="avatarRandom">Randomise</button><button type="button" id="avatarEmote">Try an emote</button></div>
+      </div>
+      <div id="avatarOptions"></div>
+    </div>
+  </div>
+</div>
+
+<div id="settingsPanel" class="overlay dim" hidden>
+  <div class="panel wide">
+    <header><h2>Settings</h2><button class="close" type="button" data-close="settingsPanel" aria-label="Close">✕</button></header>
+    <div class="tabs pad">
+      <button type="button" data-tab="graphics" class="on">Graphics</button>
+      <button type="button" data-tab="controls">Controls</button>
+      <button type="button" data-tab="audio">Sound</button>
+    </div>
+    <div id="settingsBody" class="body"></div>
+  </div>
+</div>
+
+<div id="pause" class="overlay dim" hidden>
+  <div class="card small">
+    <h2>Paused</h2>
+    <button id="resumeBtn" type="button" class="primary">Resume</button>
+    <button id="pauseAvatar" type="button">Character</button>
+    <button id="pauseSettings" type="button">Settings</button>
+    <button id="pauseProfile" type="button">Profile &amp; skills</button>
+    <button id="pauseAdmin" type="button">World settings</button>
+    <button id="pauseExport" type="button">Export world</button>
+    <button id="quitBtn" type="button">Save &amp; quit to title</button>
+  </div>
+</div>
+
+<!-- online: server browser -->
+<div id="online" class="overlay dim" hidden>
+  <div class="panel wide">
+    <header><h2>Play online</h2><button class="close" type="button" id="onlineClose" aria-label="Close">✕</button></header>
+    <div class="body">
+      <p id="noServerNote" class="hint" hidden>This page isn't running from a Cave Craft server, so there are no worlds here. Start the server (see README) and open its address, or add another server's address below. Web pages that block connections (like a hosted preview) can only play single-player.</p>
+      <div id="onlineFilters" class="filters"></div>
+      <div class="menurow small">
+        <button type="button" id="onlineRefresh">Refresh</button>
+        <input id="inviteCode" maxlength="12" placeholder="Invite code" autocomplete="off">
+        <button type="button" id="inviteJoin">Join with code</button>
+      </div>
+      <p id="onlineError" class="error" hidden></p>
+      <div id="roomList"></div>
+      <div id="createBlock">
+        <div class="menurow small"><button type="button" id="showCreate" class="primary">Create your own world</button></div>
+        <form id="createRoom" class="createRoom" hidden>
+          <label>World name <input id="crName" maxlength="32" placeholder="My world"></label>
+          <label>Seed <input id="crSeed" maxlength="32" placeholder="Random"></label>
+          <label>Mode <select id="crMode"></select></label>
+          <label>Who can find it <select id="crVis">
+            <option value="public">Public: listed for everyone</option>
+            <option value="unlisted">Unlisted: only with the link</option>
+            <option value="private">Invite-only: needs an invite</option></select></label>
+          <label>Most players <input id="crMax" type="number" min="2" max="32" value="12"></label>
+          <label class="wide">Description <input id="crDesc" maxlength="120" placeholder="What's this world about?"></label>
+          <fieldset class="wide"><legend>Rules</legend><div id="crRules" class="rules"></div></fieldset>
+          <div class="menurow wide"><button type="submit" class="primary">Create &amp; join</button></div>
+        </form>
+      </div>
+      <h4>Other servers</h4>
+      <div class="menurow small"><input id="serverAddr" placeholder="e.g. 192.168.1.20:3000" autocomplete="off"><button type="button" id="addServer">Add server</button></div>
+      <div id="serverChips" class="chips"></div>
+    </div>
+  </div>
+</div>
+
+<div id="profile" class="overlay dim" hidden>
+  <div class="panel wide">
+    <header><h2>Profile &amp; skills</h2><button class="close" type="button" data-close="profile" aria-label="Close">✕</button></header>
+    <div id="profileBody" class="body"></div>
+  </div>
+</div>
+
+<div id="worldAdmin" class="overlay dim" hidden>
+  <div class="panel wide">
+    <header><h2>World settings</h2><button class="close" type="button" data-close="worldAdmin" aria-label="Close">✕</button></header>
+    <div class="tabs pad">
+      <button type="button" data-atab="players" class="on">Players</button>
+      <button type="button" data-atab="rules">Rules</button>
+      <button type="button" data-atab="invites">Invites</button>
+      <button type="button" data-atab="bans">Bans</button>
+      <button type="button" data-atab="world">World</button>
+    </div>
+    <div id="adminBody" class="body"></div>
+  </div>
+</div>
+
+<div id="death" class="overlay" hidden>
+  <div class="card small">
+    <h2>You were knocked out</h2>
+    <p id="deathCause"></p>
+    <button id="respawnBtn" type="button" class="primary">Respawn</button>
+  </div>
+</div>
+
+<script type="module" src="./js/main.js"></script>
+</body></html>

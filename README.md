@@ -294,3 +294,10 @@ Every texture, icon, model and sound is generated in code. There are no image or
 ## License
 
 The game code is yours to use and change. three.js is MIT licensed (see `public/vendor/three-LICENSE.txt`).
+
+## Play on GitHub Pages (single-player)
+
+The `docs/` folder is a ready-made copy of `public/` for GitHub Pages. In the repository go to
+**Settings → Pages**, set **Source** to **Deploy from a branch**, pick **main** and **/docs**, and save.
+After a minute the game is at `https://<your-name>.github.io/<repo-name>/`.
+If you change `public/`, copy it to `docs/` again (and wrap `index.html` in `<!doctype html><html><head>…</head><body>…</body></html>`).
