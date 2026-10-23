@@ -466,6 +466,7 @@ export class Sim {
   /* Anti-cheat                                                       */
   /* ================================================================ */
   flag(p, why) {
+    if (p.exempt) return; // the player hosting from their own browser
     const now = Date.now();
     p.viol = p.viol.filter(v => now - v.t < 60000);
     p.viol.push({ t: now, why });
@@ -479,7 +480,7 @@ export class Sim {
     const now = Date.now();
     const dt = Math.max(0.05, (now - p.lastPosT) / 1000);
     p.lastPosT = now;
-    const free = now < p.tpUntil || p.creative || this.local;
+    const free = now < p.tpUntil || p.creative || this.local || p.exempt;
     if (p.freeze && !this.local) {
       if (p.okPos && Math.hypot(m.x - p.okPos.x, m.z - p.okPos.z) > 1.5) { this.send(p, { t: 'tpto', ...p.okPos, freeze: true }); return false; }
     }
@@ -732,6 +733,7 @@ export class Sim {
       }
     }
     this.updateItems(dt);
+    if (this.tetherId) this.tetherGuests(dt);
     for (const [id, e] of this.ents) if (e.dead) this.ents.delete(id);
     this.fluids.tick(dt);
     this.machines.tick(dt);
@@ -760,6 +762,20 @@ export class Sim {
         const mm = this.machines.map.get(key);
         if (mm && mm.type !== 'chest') for (const id of set) { const q = this.players.get(id); if (q) this.send(q, { t: 'mstate', key, m: this.machineView(mm) }); }
       }
+    }
+  }
+
+  // browser-hosted worlds only simulate the area around the host, so guests must stay near
+  tetherGuests(dt) {
+    const h = this.players.get(this.tetherId);
+    if (!h) return;
+    const r = Math.max(32, Math.min(96, ((this.world.radius || 6) - 1) * 16));
+    for (const p of this.players.values()) {
+      if (p === h) continue;
+      const d = Math.hypot(p.x - h.x, p.z - h.z);
+      p.tetherWarn = (p.tetherWarn || 0) - dt;
+      if (d > r) { this.teleport(p, h.x, h.y, h.z); this.sys(p, `You went too far from ${h.name}. Stay within ${r} blocks of the host.`); }
+      else if (d > r - 14 && p.tetherWarn <= 0) { p.tetherWarn = 6; this.sys(p, `Careful: you are ${Math.round(d)} blocks from the host. The world only runs near them.`); }
     }
   }
 

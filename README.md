@@ -67,7 +67,31 @@ Chat commands: `/help`, `/who`, `/msg name text`, `/tp name`, `/seed`, `/home`, 
 `/unmute`, `/role name visitor|builder|mod`, `/invite [name]`, `/set rule on|off`, `/time day|night`,
 `/weather clear|rain|storm` and `/summon <creature>`. In your own single-player world you are the owner.
 
-## Online play
+## Play with friends without a server (peer to peer)
+
+You don't need Node, a server or any hosting. One player's browser runs the world and friends connect
+straight to it (WebRTC), using the free PeerJS matchmaking service to swap addresses. It works from the
+GitHub Pages link.
+
+1. The **host** opens or creates a world, presses **Esc**, then **Host online (friends join)**.
+2. The game shows a 5-letter **code** and a link.
+3. **Friends** open the game, press **Play online**, type the code under **Join a friend's world** (or open
+   the link) and press **Join**.
+
+Worth knowing:
+- The world runs on the host's computer. When the host closes the page or quits, everyone is sent back to
+  the title screen. The host's world is saved in the host's browser, including each friend's bag.
+- Friends must stay within about 80 blocks of the host, because only the area around the host is simulated.
+  They are pulled back if they wander too far.
+- The host is the owner: Esc → **World settings** (or key O) to kick, ban, mute and change rules.
+  Bans last until the host closes the room.
+- Some school or company networks block peer-to-peer connections. If joining never works, try another network
+  (a phone hotspot is a good test), or use a real server (below).
+- Guests' progress profiles are stored in their own browsers and sent to the host, so a modified browser can lie
+  about its own level. Fine for friends, not for strangers.
+- `?peerserver=host:port` on the page address uses your own PeerJS server instead of the free one.
+
+## Online play (with a server)
 
 Start the server (`npm start`) and press **Play online** on the title screen.
 
@@ -263,6 +287,7 @@ cave-craft/
         ├── host.js      Talks to the world brain (in-page or over the network)
         ├── entview.js   Draws creatures, villagers, items and falling blocks
         ├── models.js    Creature models
+        ├── (vendor/peerjs.min.js, MIT: peer-to-peer connections)
         ├── social.js    Server browser, world settings, profile, round HUD
         ├── avatar.js    Customisable player models and emotes
         ├── map.js       Minimap and world map
@@ -300,7 +325,7 @@ The game code is yours to use and change. three.js is MIT licensed (see `public/
 The `docs/` folder is a ready-made copy of `public/` for GitHub Pages. In the repository go to
 **Settings → Pages**, set **Source** to **Deploy from a branch**, pick **main** and **/docs**, and save.
 After a minute the game is at `https://<your-name>.github.io/<repo-name>/`.
-If you change `public/`, copy it to `docs/` again (and wrap `index.html` in `<!doctype html><html><head>…</head><body>…</body></html>`).
+If you change `public/`, run `npm run build:docs` to refresh `docs/`.
 
 ## Easiest way to start the server
 

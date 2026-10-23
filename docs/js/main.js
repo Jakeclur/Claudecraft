@@ -21,7 +21,7 @@ import { TitleMenu, AvatarEditor, SettingsPanel } from './menu.js';
 import { OnlinePanel, AdminPanel, ProfilePanel, renderRound } from './social.js';
 import { storage } from './storage.js';
 import { settings, actionFor } from './settings.js';
-import { LocalHost, RemoteHost, fetchRooms, localProfile } from './host.js';
+import { LocalHost, RemoteHost, PeerHost, fetchRooms, localProfile } from './host.js';
 import { skillEffects, sanitizeAvatar, levelFromXp } from './sim/progression.js';
 import { MODES, ROLE_NAMES, canBuild } from './sim/rules.js';
 import { raycastBlock, overlapsBox, rayBox } from './physics.js';
@@ -186,6 +186,30 @@ function openWorldSettings() {
   openPanel('worldAdmin');
   adminPanel.render();
 }
+function joinLink(code) { return `${location.origin}${location.pathname}?join=${code}`; }
+function refreshHostUI() {
+  const b = $('pauseHost'), info = $('hostInfo');
+  const can = game.playing || game.loading ? !!host && host.local === true : false;
+  b.hidden = !can;
+  if (!can) { info.hidden = true; return; }
+  if (host.hosting) {
+    b.textContent = 'Stop letting friends in';
+    info.hidden = false;
+    info.innerHTML = `<b>Code: ${host.code}</b> · ${host.guests.size} friend${host.guests.size === 1 ? '' : 's'} here<br>Friends open the game, press <b>Play online</b> and type the code. Or send them: <input readonly id="hostLink" value="${joinLink(host.code)}" onfocus="this.select()">`;
+    $('hostLink').addEventListener('keydown', e => e.stopPropagation());
+  } else { b.textContent = 'Host online (friends join)'; info.hidden = true; }
+}
+$('pauseHost').addEventListener('click', async () => {
+  if (!host?.local) return;
+  const b = $('pauseHost');
+  if (host.hosting) { host.closeRoom(); refreshHostUI(); ui.toast('Your world is closed to friends again.'); return; }
+  b.disabled = true; b.textContent = 'Opening…';
+  try {
+    const code = await host.openRoom(game.meta.name);
+    ui.chat('', `Friends can join with code ${code}. Keep this page open: the world runs on your computer.`, true);
+  } catch (e) { ui.toast(e.message, 'bad'); }
+  b.disabled = false; refreshHostUI();
+});
 $('pauseAdmin').addEventListener('click', () => { ui.hidePanel('pause'); openWorldSettings(); });
 
 /* ------------------------------------------------------------------ */
@@ -236,12 +260,36 @@ fetch('/api/info', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catc
     s.classList.add('on');
   } else s.textContent = 'Single-player here. Start the included server to host worlds for friends, or join a server by its address under Play online.';
   // invite links: ?room=ID&invite=CODE&server=http://host:port
-  if (params.get('room') || params.get('invite')) {
+  if (params.get('join')) {
+    $('inviteBanner').hidden = false;
+    $('inviteBanner').querySelector('span').textContent = `A friend invited you to their world (code ${params.get('join').toUpperCase()}).`;
+  } else if (params.get('room') || params.get('invite')) {
     $('inviteBanner').hidden = false;
     $('inviteBanner').querySelector('span').textContent = `You were invited to a world${params.get('server') ? ` on ${params.get('server')}` : ''}.`;
   }
 });
-$('inviteGo').addEventListener('click', () => joinOnline(params.get('server') || '', params.get('room'), params.get('invite')));
+$('inviteGo').addEventListener('click', () => params.get('join') ? joinPeer(params.get('join')) : joinOnline(params.get('server') || '', params.get('room'), params.get('invite')));
+
+async function joinPeer(code) {
+  if (game.loading || game.playing) return;
+  const err = msg => { $('onlineError').textContent = msg; $('onlineError').hidden = false; $('inviteBanner').querySelector('span').textContent = msg; };
+  const r = new PeerHost(code);
+  try {
+    initAudio();
+    $('peerJoin').disabled = true; $('onlineError').hidden = false; $('onlineError').textContent = 'Connecting to your friend…';
+    await r.connect(playerName(), game.avatar);
+    r.hold();
+    const { welcome, info } = await r.join('p2p');
+    $('online').hidden = true; $('onlineError').hidden = true;
+    await startWorld({ id: `p2p-${welcome.seed}`, name: info.room.name, seed: welcome.seed, mode: welcome.mode }, { host: r, welcome, info });
+  } catch (e) {
+    r.release(); r.close();
+    err(e.message || 'Could not join that world.');
+  } finally { $('peerJoin').disabled = false; }
+}
+$('peerJoin').addEventListener('click', () => { const c = $('peerCode').value.trim(); if (c) joinPeer(c); });
+$('peerCode').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') $('peerJoin').click(); });
+$('peerCode').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
 
 async function joinOnline(base, roomId, invite) {
   if (game.loading || game.playing) return;
@@ -319,7 +367,17 @@ async function startWorld(meta, online = null) {
       saved: state.sim || { machines: state.machines, time: state.time }, name: game.name, avatar: game.avatar,
     });
     game.room = null; adminView = null;
+    // so friends joining this browser-hosted world can load the blocks that have been changed
+    host.modifiedList = () => [...new Set([...modifiedKeys, ...(world ? world.allModified().map(c => c.key) : [])])];
+    host.chunkProvider = async (cx, cz) => {
+      const k = cx + ',' + cz, c = world?.chunks.get(k);
+      if (c && c.blocks && c.modified) return c.blocks;
+      if (pendingChunkSaves.has(k)) return pendingChunkSaves.get(k);
+      if (modifiedKeys.has(k)) return storage.loadChunk(meta.id, k);
+      return null;
+    };
   }
+  refreshHostUI();
   bindHost(host);
   if (!online) welcome = host.start();
   game.myId = welcome.id; game.role = welcome.role; game.rules = welcome.rules; game.worldSpawn = welcome.spawn;
@@ -435,7 +493,7 @@ async function quitToTitle(reason = null) {
   for (const a of avatars.values()) a.dispose(); avatars.clear();
   selfAvatar?.dispose(); selfAvatar = null;
   world?.dispose(); world = null;
-  if (wasOnline && h) { h.leave(); h.close(); if (remote === h) remote = null; }
+  if (wasOnline && h) { h.leave(); h.close(); if (remote === h) remote = null; } else h?.close();
   host = null; adminView = null; game.round = null; renderRound(null);
   sky.authority = true;
   $('hud').hidden = true; $('menu').hidden = false; $('pause').hidden = true; $('loading').hidden = true; $('menuMain').hidden = false;
@@ -557,6 +615,7 @@ function bindHost(h) {
     ui.chat('', `Invite link: ${link}`, true);
   });
   h.on('kicked', m => { quitToTitle(m.reason || 'You were removed from the world.'); });
+  h.on('guests', () => refreshHostUI());
   h.on('error', m => ui.toast(m.message, 'bad'));
   h.on('left', () => {});
   h.on('disconnected', () => { if (game.playing && h === host) reconnect(); });
@@ -572,7 +631,7 @@ async function reconnect() {
   for (let i = 0; i < 5 && game.playing && host === old; i++) {
     await sleep(1000 * 2 ** i);
     try {
-      const r = new RemoteHost(old.base);
+      const r = old.clone();
       await r.connect(game.name, game.avatar);
       r.hold();
       const { welcome, info } = await r.join(roomId, invite);

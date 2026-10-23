@@ -199,6 +199,8 @@
     <button id="pauseAvatar" type="button">Character</button>
     <button id="pauseSettings" type="button">Settings</button>
     <button id="pauseProfile" type="button">Profile &amp; skills</button>
+    <button id="pauseHost" type="button" hidden>Host online (friends join)</button>
+    <p id="hostInfo" class="hint" hidden></p>
     <button id="pauseAdmin" type="button">World settings</button>
     <button id="pauseExport" type="button">Export world</button>
     <button id="quitBtn" type="button">Save &amp; quit to title</button>
@@ -210,14 +212,18 @@
   <div class="panel wide">
     <header><h2>Play online</h2><button class="close" type="button" id="onlineClose" aria-label="Close">✕</button></header>
     <div class="body">
-      <p id="noServerNote" class="hint" hidden>This page isn't running from a Cave Craft server, so there are no worlds here. Start the server (see README) and open its address, or add another server's address below. Web pages that block connections (like a hosted preview) can only play single-player.</p>
+      <h4>Join a friend's world</h4>
+      <div class="menurow small"><input id="peerCode" maxlength="5" placeholder="Code, e.g. K7QM2" autocomplete="off"><button type="button" id="peerJoin" class="primary">Join</button></div>
+      <p class="hint">Your friend opens their world, presses Esc, then <b>Host online</b>, and tells you the 5-letter code. No server needed: their computer runs the world, so they must keep the page open.</p>
+      <p id="onlineError" class="error" hidden></p>
+      <p id="noServerNote" class="hint" hidden>This page isn't running from a Cave Craft server, so there is no world list here. Friends' worlds still work with a code.</p>
+      <div id="serverBlock">
       <div id="onlineFilters" class="filters"></div>
       <div class="menurow small">
         <button type="button" id="onlineRefresh">Refresh</button>
         <input id="inviteCode" maxlength="12" placeholder="Invite code" autocomplete="off">
         <button type="button" id="inviteJoin">Join with code</button>
       </div>
-      <p id="onlineError" class="error" hidden></p>
       <div id="roomList"></div>
       <div id="createBlock">
         <div class="menurow small"><button type="button" id="showCreate" class="primary">Create your own world</button></div>
@@ -238,6 +244,7 @@
       <h4>Other servers</h4>
       <div class="menurow small"><input id="serverAddr" placeholder="e.g. 192.168.1.20:3000" autocomplete="off"><button type="button" id="addServer">Add server</button></div>
       <div id="serverChips" class="chips"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -271,5 +278,6 @@
   </div>
 </div>
 
+<script src="./vendor/peerjs.min.js"></script>
 <script type="module" src="./js/main.js"></script>
 </body></html>

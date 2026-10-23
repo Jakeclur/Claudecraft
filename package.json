@@ -6,7 +6,8 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build:docs": "node scripts/build-docs.mjs"
   },
   "engines": {
     "node": ">=18"
